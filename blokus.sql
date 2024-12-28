@@ -27,7 +27,7 @@ PRIMARY KEY(`piece_color`)
 CREATE TABLE `game_status` (
     `status` ENUM('INACTIVE','INITIALIZED','STARTED','ENDED','ABORTED') NOT NULL DEFAULT 'INACTIVE',
     `player` ENUM('R','G','B','Y') DEFAULT NULL,
-    `result` ENUM('R','G','B','Y') DEFAULT NULL,
+    `result` ENUM('R','G','B','Y','A') DEFAULT NULL,
     `last_change` TIMESTAMP NULL DEFAULT NULL
 )
 
