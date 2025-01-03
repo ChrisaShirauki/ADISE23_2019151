@@ -60,7 +60,7 @@ function handle_board($method,$input) {
 
 function handle_blocks($method,$input) {
 	if($method=='GET'){
-		show_blocks($_GET['color'],$_GET['token']);
+		show_blocks();
 	}  
 	else {
 		header('HTTP/1.1 405 Method Not Allowed');
