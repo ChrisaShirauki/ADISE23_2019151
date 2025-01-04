@@ -1,4 +1,8 @@
 DROP TABLE IF EXISTS `board`;
+DROP TABLE IF EXISTS `player`;
+DROP TABLE IF EXISTS `game_status`;
+DROP TABLE IF EXISTS `blocks`;
+DROP TABLE IF EXISTS `blocks_initial`;
 
 CREATE TABLE `board`(
   `x` TINYINT(2) NOT NULL,
@@ -26,30 +30,25 @@ CREATE TABLE `player`(
 PRIMARY KEY(`piece_color`)
 );
 
+
 CREATE TABLE `game_status` (
     `status` ENUM('INACTIVE','INITIALIZED','STARTED','ENDED','ABORTED') NOT NULL DEFAULT 'INACTIVE',
     `player` ENUM('R','G','B','Y') DEFAULT NULL,
     `result` ENUM('R','G','B','Y','A') DEFAULT NULL,
     `last_change` TIMESTAMP NULL DEFAULT NULL
-)
-
-
-DELIMITER $$
-
-CREATE TRIGGER game_status_update 
-BEFORE UPDATE ON game_status
-FOR EACH ROW
-BEGIN
-    SET NEW.last_change = NOW();
-END$$
-
-DELIMITER ;
+);
 
 CREATE TABLE `blocks`(
-    'color' ENUM('R', 'B', 'G', 'Y') NOT NULL,
-    'piece' ENUM
-)
-INSERT INTO `blocks` (`color`, `piece`) VALUES
+    `color` ENUM('R', 'B', 'G', 'Y') NOT NULL,
+    `piece` INT
+);
+
+CREATE TABLE `blocks_initial`(
+    `color` ENUM('R', 'B', 'G', 'Y') NOT NULL,
+    `piece` INT
+);
+
+INSERT INTO `blocks_initial` (`color`, `piece`) VALUES
 ("R", 0),
 ("R", 1),
 ("R", 2),
@@ -536,3 +535,12 @@ INSERT INTO `board` (`x`, `y`, `piece_color`, `piece`) VALUES
 (20, 18, NULL, NULL),
 (20, 19, NULL, NULL),
 (20, 20, NULL, NULL);
+
+DELIMITER $$
+CREATE OR REPLACE TRIGGER game_status_update 
+BEFORE UPDATE ON game_status
+FOR EACH ROW
+BEGIN
+    SET NEW.last_change = NOW();
+END$$
+DELIMITER ;

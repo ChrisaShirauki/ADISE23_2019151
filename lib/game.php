@@ -6,14 +6,29 @@ function show_board() {
 	
     $board = get_board();
     header('Content-type: application/json');
-    print json_encode($board);	
-	
+    print json_encode($board);		
 }
 
+// Return the players' blocks as JSON
 function show_blocks(){
     $blocks = get_blocks();
     header('Content-type: application/json');
     print json_encode($blocks);	
+}
+
+
+// Return the game status as JSON
+function inspect_game(){
+	global $mysqli;
+	
+	$sql = 'SELECT * FROM gamestate';
+	$st = $mysqli->prepare($sql);
+	$st->execute();
+	$res = $st->get_result();
+	$r = $res->fetch_all(MYSQLI_ASSOC);
+	
+	header('Content-type: application/json');
+	print json_encode($r, JSON_PRETTY_PRINT);
 }
 
 // Return the board as a 2D array to use in other functions
@@ -80,12 +95,10 @@ function get_blocks(){
 }
 
 // function to get (and refresh) the state of the game
-function show_game(){
+function get_game(){
 	global $mysqli;
 	
-	update_status();
-	
-	$sql = 'SELECT * FROM gamestate';
+	$sql = 'SELECT * FROM game_status';
 	$st = $mysqli->prepare($sql);
 	$st->execute();
 	$res = $st->get_result();
@@ -94,25 +107,8 @@ function show_game(){
 	
 	$state = array(
 		"status" => $r[0]['status'],
-		"turn" => $r[0]['turn'],
+		"player" => $r[0]['player'],
 	);
 	
 	return $state;
-}
-
-// function to show (and refresh) the state of the game
-function inspect_game(){
-	global $mysqli;
-	
-	update_status();
-	
-	$sql = 'SELECT * FROM gamestate';
-	$st = $mysqli->prepare($sql);
-	$st->execute();
-	$res = $st->get_result();
-	$r = $res->fetch_all(MYSQLI_ASSOC);
-	
-	header('Content-type: application/json');
-	print json_encode($r, JSON_PRETTY_PRINT);
-	header("HTTP/1.1 200 OK.");
 }

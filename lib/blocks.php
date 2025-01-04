@@ -136,4 +136,9 @@ $block_types = [
 
 ];
 
+function show_shapes(){
+    global $block_types;
+    header('Content-type: application/json');
+    print json_encode($block_types);	
+}
 ?>
