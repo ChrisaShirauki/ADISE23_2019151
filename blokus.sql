@@ -48,6 +48,9 @@ CREATE TABLE `blocks_initial`(
     `piece` INT
 );
 
+#Initialise 1 game room
+INSERT INTO `game_status` () VALUES ();
+
 INSERT INTO `blocks_initial` (`color`, `piece`) VALUES
 ("R", 0),
 ("R", 1),

@@ -35,16 +35,19 @@ function find_game($input) {
 	while ($row = $result->fetch_assoc()) {
 		$usedColors[] = $row['piece_color'];
 	}
-
 	$colors = ['R', 'B', 'Y', 'G'];
 
 	$availableColors = array_diff($colors, $usedColors);
 
-	if(empty($availableColors)){ // There is already a ongoing game in the room
-        header('HTTP/1.1 503 Unavailable');
-		print json_encode(['errormesg'=>'No available colors.']);
+	if (count($availableColors) === 0) {
+		header('HTTP/1.1 503 Unavailable');
+		echo json_encode(['errormesg' => 'No available colors.']);
 		exit;
-    }
+	}
+
+	$availableColors = array_values($availableColors);
+
+	// Randomly select a color
 	$randomKey = random_int(0, count($availableColors) - 1); // Generate a random index
 	$color = $availableColors[$randomKey];
 
@@ -52,21 +55,19 @@ function find_game($input) {
 	$token = md5(string: ($currentTime . $username));
 
 	$sql = 'INSERT INTO `player` (`username`, `piece_color`, `last_action`, `player_token`) VALUES(?,?,NULL,?);';
-	$st2 = $mysqli->prepare($sql);
-	$st2->bind_param('sss',$username,$color,$token);
-	$st2->execute();	
+	$st = $mysqli->prepare($sql);
+	$st->bind_param('sss',$username,$color,$token);
+	$st->execute();	
 	
 	$sql = "UPDATE game_status SET status='INITIALIZED';";
-	$st2 = $mysqli->prepare($sql);
-	$st2->bind_param('sss',$username,$color,$token);
-	$st2->execute();
+	$st = $mysqli->prepare($sql);
+	$st->execute();
 	
 	$players = get_players();
 	if(count($players) >= 2){
 		$sql = "UPDATE game_status SET status='STARTED';";
-		$st2 = $mysqli->prepare($sql);
-		$st2->bind_param('sss',$username,$color,$token);
-		$st2->execute();
+		$st = $mysqli->prepare($sql);
+		$st->execute();
 	}
 	#return the token to the client to be used as input in all the functions
 	
