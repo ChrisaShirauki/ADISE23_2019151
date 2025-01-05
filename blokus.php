@@ -85,7 +85,7 @@ function handle_shapes($method,$input) {
 
 function handle_placement($method,$input) {
 	if($method=='GET'){
-		inspect_placement();
+		inspect_placement($input);
 	}
 	else if($method=='PUT'){
 		place_piece($input);

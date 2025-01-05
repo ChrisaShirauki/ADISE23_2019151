@@ -1,4 +1,7 @@
 <?php
+
+$colors = ['R', 'G', 'B', 'Y'];
+
 $block_types = [
     [
         // PIECE 01

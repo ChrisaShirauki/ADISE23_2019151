@@ -26,7 +26,7 @@ CREATE TABLE `player`(
 `username` VARCHAR(20) DEFAULT NULL,
 `piece_color` ENUM('R', 'B', 'G', 'Y') NOT NULL,
 `last_action` TIMESTAMP NULL DEFAULT NULL,		#to check for inactivity
-`player_token` VARCHAR(40),		#for authentication
+`player_token` VARCHAR(40),		#for authentication 
 PRIMARY KEY(`piece_color`)
 );
 

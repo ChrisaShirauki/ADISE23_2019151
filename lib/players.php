@@ -35,7 +35,8 @@ function find_game($input) {
 	while ($row = $result->fetch_assoc()) {
 		$usedColors[] = $row['piece_color'];
 	}
-	$colors = ['R', 'B', 'Y', 'G'];
+	
+	global $colors;
 
 	$availableColors = array_diff($colors, $usedColors);
 
