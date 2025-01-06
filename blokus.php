@@ -51,6 +51,9 @@ function handle_game($method,$input) {
     else if($method=='POST'){
 		find_game($input);
 	}
+	else if($method=='DELETE'){
+		leave_game($input);
+	}
 	else {
 		header('HTTP/1.1 405 Method Not Allowed');
 	}

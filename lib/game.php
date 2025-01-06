@@ -19,6 +19,14 @@ function show_blocks(){
 // Return the game status as JSON
 function inspect_game(){
 	global $mysqli;
+
+    if(kick_inactive()){
+        $sql = "UPDATE `gamestate` SET `status` = 'ABORTED'";
+        $st = $mysqli->prepare($sql);
+        $st->execute();
+        $res = $st->get_result();
+        $r = $res->fetch_all(MYSQLI_ASSOC);
+    }
 	
 	$sql = 'SELECT * FROM gamestate';
 	$st = $mysqli->prepare($sql);
@@ -125,7 +133,54 @@ function inspect_placement($input){
 }
 
 function place_piece($input){
+    global $mysqli;
 
+    $piece = $input['piece']; 
+    $color = $input['color']; 
+    $token = $input['token'];
+
+    if (!(check_token($color, $token))){    // The player has wrong token, Unauthorised
+        header('Content-Type: application/json');
+        echo json_encode(['status' => 'error', 'message' => 'Wrong token']);
+        http_response_code(401);
+        return;
+    }
+
+    $turn=get_game()['player'];	
+    if ($turn !== $color){    // It is not the player turn, Forbidden
+        header('Content-Type: application/json');
+        echo json_encode(['status' => 'error', 'message' => 'Wait your turn']);
+        http_response_code(403);
+        return;
+    }
+
+    $blocks = get_blocks();
+    if(!in_array($piece, $blocks[$color])){   // The player doesn't have that block, Bad request
+        header('Content-Type: application/json');
+        echo json_encode(['status' => 'error', 'message' => 'Block missing']);
+        http_response_code(400);
+        return;
+    }
+
+    $changes = validate_placement($input);
+    if (empty($changes)) {  // Move not allowed, bad request
+        header('Content-Type: application/json');
+        echo json_encode(['status' => 'error', 'message' => 'Invalid move']);
+        http_response_code(400);
+        return;
+    }
+       
+
+    foreach ($changes as [$x, $y]) {
+        $x++;
+        $y++;
+        $sql = 'UPDATE `board`
+                SET `piece_color` = ?, `piece` = ?
+                WHERE `x` = ? AND `y` = ?;';
+        $st = $mysqli->prepare($sql);
+        $st->bind_param('siii',$color,$piece,$x,$y);
+        $st->execute();	
+    }    
 }
 
 function validate_placement($input){
@@ -134,7 +189,7 @@ function validate_placement($input){
         header('Content-Type: application/json');
         echo json_encode(['status' => 'error', 'message' => 'Parameters missing']);
         http_response_code(400);
-        return false;
+        return [];
     }
 
     // Extract input parameters
@@ -154,7 +209,7 @@ function validate_placement($input){
         header('Content-Type: application/json');
         echo json_encode(['status' => 'error', 'message' => 'Invalid color']);
         http_response_code(400);
-        return false;
+        return [];
     }
 
     global $block_types;
@@ -162,7 +217,7 @@ function validate_placement($input){
         header('Content-Type: application/json');
         echo json_encode(['status' => 'error', 'message' => 'Invalid piece']);
         http_response_code(400);
-        return false;
+        return [];
     }
 
     $block = $block_types[$piece];
@@ -172,12 +227,12 @@ function validate_placement($input){
         header('Content-Type: application/json');
         echo json_encode(['status' => 'error', 'message' => 'Out of bounds']);
         http_response_code(400);
-        return false;
+        return [];
     }
     // Call check_placement function
     return check_placement($x - 1, $y - 1, $block, $color, $rotation);
 }
-function check_placement($x, $y, $piece, $color, $rotation):bool{
+function check_placement($x, $y, $piece, $color, $rotation){
     $block = $piece;
 
     // Rotate the block as needed before running the checks
@@ -201,6 +256,8 @@ function check_placement($x, $y, $piece, $color, $rotation):bool{
         [1, -1],    [1, 0],     [1, 1]
     ];
 
+    $changes = [];
+
     for ($i = 0; $i < $blockRows; $i++) {
         for ($j = 0; $j < $blockCols; $j++) {
             if ($block[$i][$j] === 1) { // A tile on the block
@@ -208,14 +265,16 @@ function check_placement($x, $y, $piece, $color, $rotation):bool{
                 $boardX = $x + $i;
                 $boardY = $y + $j;
 
+                $changes[] = [$boardX, $boardY];
+
                 // Check if the block goes out of bounds
                 if ($boardX < 0 || $boardX >= $boardRows || $boardY < 0 || $boardY >= $boardCols) {
-                    return false; 
+                    return []; 
                 }
 
                 // Check if the block covers another block
                 if ($board[$boardX][$boardY]['piece_color'] !== null){
-                    return false;
+                    return [];
                 }
 
                 foreach ($directions as [$dx, $dy]) {
@@ -235,23 +294,20 @@ function check_placement($x, $y, $piece, $color, $rotation):bool{
     }
 
     if (!$adjacentColor) {  // No adjacent tile, Check the four corners for the first move
-        if (!($block[0][0] === 1)){ // Doesn't touch the corner of the board
-            return false;
-        }
         $corners = [
             [0, 0],                 [0, $boardCols - 1],
             [$boardRows - 1, 0],    [$boardRows - 1, $boardCols - 1]
         ];
         
-        foreach ($corners as [$cornerX, $cornerY]) {
-            if ($x == $cornerX && $y == $cornerY) {
-                return true;
+        foreach ($corners as $corner) {
+            if (in_array($corner, $changes)) {
+                return $changes;
             }
         }
-        return false;
+        return [];
     }
 
-    return true; 
+    return $changes; 
 }
 
 // Rotate a table 90 degrees
@@ -269,4 +325,39 @@ function rotateTableClockwise($table) {
     }
 
     return $rotated;
+}
+
+function check_token($color, $token){
+    global $mysqli;
+
+    $sql = 'SELECT `player_token` FROM `players` WHERE `piece_color` = ?';
+    $st = $mysqli->prepare($sql);
+    $st->bind_param('s',$color);
+    $st->execute();
+    $res = $st->get_result();
+
+    if ($row = $res->fetch_assoc()) {
+        $player_token = $row['player_token'];
+    } else {
+        return false;
+    }
+
+    if($player_token == $token){
+        return true;
+    }
+    else{
+        return false;
+    }
+}
+
+function change_turn(){
+
+}
+
+function check_winner(){
+
+}
+
+function check_moves(){
+
 }

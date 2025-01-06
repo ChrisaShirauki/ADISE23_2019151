@@ -90,4 +90,32 @@ function get_players(){
 	
 	return $r;
 }
+
+function check_activity(){
+	global $mysqli;
+	
+	$sql = 'SELECT * FROM `players` WHERE `last_action` < (NOW() - INTERVAL 100 MINUTE) ORDER BY `last_action`';
+	$st = $mysqli->prepare($sql);
+	$st->execute();
+	$res = $st->get_result();	
+	if(($res->num_rows) == 0){
+		return null;
+	}
+	$r = $res->fetch_all(MYSQLI_ASSOC);
+	return $r[0]['piece_color'];			
+}
+
+function kick_inactive(){
+	global $mysqli;
+	$c=check_activity();
+	if(!is_null($c)){
+		$sql = 'DELETE FROM `players` WHERE `piece_color` = ?';
+		$st = $mysqli->prepare($sql);
+		$st->bind_param('s',$c);	
+		$st->execute();
+
+		return true;
+	}
+	return false; // No AFK players
+}
 ?>
