@@ -13,10 +13,12 @@ CREATE TABLE `board`(
 );
 
 DELIMITER $$
-CREATE OR REPLACE PROCEDURE reset_board()		#R to reset red B to reset blue anything else to reset both
+CREATE OR REPLACE PROCEDURE new_game()		#clean the board and replace the blocks
 BEGIN
 	UPDATE `board`  SET `piece_color` = NULL;
     UPDATE `board`  SET `piece` = NULL;
+
+    REPLACE INTO `blocks` SELECT * FROM `blocks_initial`;
 END ;
 $$
 DELIMITER ;
@@ -27,6 +29,7 @@ CREATE TABLE `player`(
 `piece_color` ENUM('R', 'B', 'G', 'Y') NOT NULL,
 `last_action` TIMESTAMP NULL DEFAULT NULL,		#to check for inactivity
 `player_token` VARCHAR(40),		#for authentication 
+`computer` BOOLEAN DEFAULT FALSE,
 PRIMARY KEY(`piece_color`)
 );
 

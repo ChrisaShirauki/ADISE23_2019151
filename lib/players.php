@@ -55,10 +55,12 @@ function find_game($input) {
 	$currentTime = microtime(true);
 	$token = md5(string: ($currentTime . $username));
 
-	$sql = 'INSERT INTO `player` (`username`, `piece_color`, `last_action`, `player_token`) VALUES(?,?,NULL,?);';
+	$sql = 'INSERT INTO `player` (`username`, `piece_color`, `last_action`, `player_token`,`computer`) VALUES(?,?,NULL,?,FALSE);';
 	$st = $mysqli->prepare($sql);
 	$st->bind_param('sss',$username,$color,$token);
 	$st->execute();	
+
+	unset($availableColors[$randomKey]);
 	
 	$sql = "UPDATE game_status SET status='INITIALIZED';";
 	$st = $mysqli->prepare($sql);
@@ -66,9 +68,7 @@ function find_game($input) {
 	
 	$players = get_players();
 	if(count($players) >= 2){
-		$sql = "UPDATE game_status SET status='STARTED';";
-		$st = $mysqli->prepare($sql);
-		$st->execute();
+		start_game($availableColors);
 	}
 	#return the token to the client to be used as input in all the functions
 	
@@ -78,6 +78,56 @@ function find_game($input) {
 	
 }
 
+function start_game($available){
+	global $mysqli;
+
+	global $colors;
+	$start = array_rand($colors);	// Start as random player
+
+	$sql = "UPDATE game_status SET `status`='STARTED', `player`=?;";
+	$st = $mysqli->prepare($sql);
+	$st->bind_param('s',$start);
+	$st->execute();
+
+	$i = 1;
+	foreach($available as $color){
+		$username = 'computer' . $i;
+		$sql = 'INSERT INTO `player` (`username`, `piece_color`, `last_action`, `player_token`) VALUES(?,?,NULL,NULL,TRUE);';
+		$st = $mysqli->prepare($sql);
+		$st->bind_param('ss',$username,$color);
+		$st->execute();	
+		$i++;
+	}
+
+	$sql = "UPDATE `player` SET `last_action`=NOW();";
+	$st = $mysqli->prepare($sql);
+	$st->execute();
+}
+
+function leave_game($input){
+	global $mysqli;
+	$color = $input['color']; 
+    $token = $input['token'];
+
+    if (!(check_token($color, $token))){    // The player has wrong token, Unauthorised
+        header('Content-Type: application/json');
+        echo json_encode(['status' => 'error', 'message' => 'Wrong token']);
+        http_response_code(401);
+        return;
+    }
+
+	$sql = 'DELETE FROM `players` WHERE `piece_color` = ?';
+	$st = $mysqli->prepare($sql);
+	$st->bind_param('s',$c);	
+	$st->execute();
+
+	$status = get_game()['status'];
+    if($status == 'STARTED'){  // Abort the game if it's started
+        $sql = "UPDATE `gamestate` SET `status` = 'ABORTED'";
+        $st = $mysqli->prepare($sql);
+        $st->execute();
+    }
+}
 // Return the players as an associative array
 function get_players(){
 	global $mysqli;
@@ -117,5 +167,27 @@ function kick_inactive(){
 		return true;
 	}
 	return false; // No AFK players
+}
+function check_token($color, $token){
+    global $mysqli;
+
+    $sql = 'SELECT `player_token` FROM `players` WHERE `piece_color` = ?';
+    $st = $mysqli->prepare($sql);
+    $st->bind_param('s',$color);
+    $st->execute();
+    $res = $st->get_result();
+
+    if ($row = $res->fetch_assoc()) {
+        $player_token = $row['player_token'];
+    } else {
+        return false;
+    }
+
+    if($player_token == $token){
+        return true;
+    }
+    else{
+        return false;
+    }
 }
 ?>

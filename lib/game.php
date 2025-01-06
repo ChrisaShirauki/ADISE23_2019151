@@ -24,8 +24,6 @@ function inspect_game(){
         $sql = "UPDATE `gamestate` SET `status` = 'ABORTED'";
         $st = $mysqli->prepare($sql);
         $st->execute();
-        $res = $st->get_result();
-        $r = $res->fetch_all(MYSQLI_ASSOC);
     }
 	
 	$sql = 'SELECT * FROM gamestate';
@@ -138,6 +136,14 @@ function place_piece($input){
     $piece = $input['piece']; 
     $color = $input['color']; 
     $token = $input['token'];
+
+    $status = get_game()['status'];
+    if($status !== 'STARTED'){  // The game is not started yet Bad Request
+        header('Content-Type: application/json');
+        echo json_encode(['status' => 'error', 'message' => 'Game has not started']);
+        http_response_code(400);
+        return;
+    }
 
     if (!(check_token($color, $token))){    // The player has wrong token, Unauthorised
         header('Content-Type: application/json');
@@ -327,31 +333,9 @@ function rotateTableClockwise($table) {
     return $rotated;
 }
 
-function check_token($color, $token){
-    global $mysqli;
-
-    $sql = 'SELECT `player_token` FROM `players` WHERE `piece_color` = ?';
-    $st = $mysqli->prepare($sql);
-    $st->bind_param('s',$color);
-    $st->execute();
-    $res = $st->get_result();
-
-    if ($row = $res->fetch_assoc()) {
-        $player_token = $row['player_token'];
-    } else {
-        return false;
-    }
-
-    if($player_token == $token){
-        return true;
-    }
-    else{
-        return false;
-    }
-}
-
-function change_turn(){
-
+function change_player(){
+    $turn = get_game()['player'];
+    global $colors;
 }
 
 function check_winner(){
