@@ -30,6 +30,7 @@ CREATE TABLE `player`(
 `last_action` TIMESTAMP NULL DEFAULT NULL,		#to check for inactivity
 `player_token` VARCHAR(40),		#for authentication 
 `computer` BOOLEAN DEFAULT FALSE,
+`passed` BOOLEAN DEFAULT FALSE,
 PRIMARY KEY(`piece_color`)
 );
 
@@ -37,7 +38,7 @@ PRIMARY KEY(`piece_color`)
 CREATE TABLE `game_status` (
     `status` ENUM('INACTIVE','INITIALIZED','STARTED','ENDED','ABORTED') NOT NULL DEFAULT 'INACTIVE',
     `player` ENUM('R','G','B','Y') DEFAULT NULL,
-    `result` ENUM('R','G','B','Y','A') DEFAULT NULL,
+    `result` ENUM('R','G','B','Y') DEFAULT NULL,
     `last_change` TIMESTAMP NULL DEFAULT NULL
 );
 

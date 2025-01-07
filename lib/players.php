@@ -123,7 +123,7 @@ function leave_game($input){
 
 	$status = get_game()['status'];
     if($status == 'STARTED'){  // Abort the game if it's started
-        $sql = "UPDATE `gamestate` SET `status` = 'ABORTED'";
+        $sql = "UPDATE `game_status` SET `status` = 'ABORTED'";
         $st = $mysqli->prepare($sql);
         $st->execute();
     }
@@ -141,27 +141,32 @@ function get_players(){
 	return $r;
 }
 
-function check_activity(){
+// Check if the player is AFK
+function check_activity($color){
 	global $mysqli;
-	
-	$sql = 'SELECT * FROM `players` WHERE `last_action` < (NOW() - INTERVAL 100 MINUTE) ORDER BY `last_action`';
+
+	$sql = 'SELECT * FROM `players` WHERE `piece_color` = ? AND `last_action` < (NOW() - INTERVAL 100 MINUTE)';
 	$st = $mysqli->prepare($sql);
+	$st->bind_param('s',$color);
 	$st->execute();
 	$res = $st->get_result();	
-	if(($res->num_rows) == 0){
-		return null;
+	if(($res->num_rows) == 0){ // Isn't AFK
+		return false;
 	}
 	$r = $res->fetch_all(MYSQLI_ASSOC);
-	return $r[0]['piece_color'];			
+	return true;			
 }
 
 function kick_inactive(){
 	global $mysqli;
-	$c=check_activity();
-	if(!is_null($c)){
+	$game = get_game();
+	$player = $game['player'];
+	$status = $game['status'];
+
+	if(check_activity($player) & $status=='STARTED'){	// If AFK after game starts kick
 		$sql = 'DELETE FROM `players` WHERE `piece_color` = ?';
 		$st = $mysqli->prepare($sql);
-		$st->bind_param('s',$c);	
+		$st->bind_param('s',$player);	
 		$st->execute();
 
 		return true;

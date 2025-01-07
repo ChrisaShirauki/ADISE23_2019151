@@ -21,12 +21,12 @@ function inspect_game(){
 	global $mysqli;
 
     if(kick_inactive()){
-        $sql = "UPDATE `gamestate` SET `status` = 'ABORTED'";
+        $sql = "UPDATE `game_status` SET `status` = 'ABORTED'";
         $st = $mysqli->prepare($sql);
         $st->execute();
     }
 	
-	$sql = 'SELECT * FROM gamestate';
+	$sql = 'SELECT * FROM game_status';
 	$st = $mysqli->prepare($sql);
 	$st->execute();
 	$res = $st->get_result();
@@ -186,9 +186,55 @@ function place_piece($input){
         $st = $mysqli->prepare($sql);
         $st->bind_param('siii',$color,$piece,$x,$y);
         $st->execute();	
-    }    
+    }  
+    
+    $sql = "UPDATE `player` SET `passed`=FALSE WHERE `piece_color` = ?;";
+	$st = $mysqli->prepare($sql);
+    $st->bind_param('s',$color);
+	$st->execute();
+
+    check_winner();
+
+    change_player();
 }
 
+function pass_turn($input){
+    $color = $input['color']; 
+    $token = $input['token'];
+
+    $status = get_game()['status'];
+    if($status !== 'STARTED'){  // The game is not started yet Bad Request
+        header('Content-Type: application/json');
+        echo json_encode(['status' => 'error', 'message' => 'Game has not started']);
+        http_response_code(400);
+        return;
+    }
+
+    if (!(check_token($color, $token))){    // The player has wrong token, Unauthorised
+        header('Content-Type: application/json');
+        echo json_encode(['status' => 'error', 'message' => 'Wrong token']);
+        http_response_code(401);
+        return;
+    }
+
+    $turn=get_game()['player'];	
+    if ($turn !== $color){    // It is not the player turn, Forbidden
+        header('Content-Type: application/json');
+        echo json_encode(['status' => 'error', 'message' => 'Wait your turn']);
+        http_response_code(403);
+        return;
+    }
+
+    global $mysqli;
+    $sql = "UPDATE `player` SET `passed`=TRUE WHERE `piece_color` = ?;";
+	$st = $mysqli->prepare($sql);
+    $st->bind_param('s',$color);
+	$st->execute();
+
+    check_winner();
+
+    change_player();
+}
 function validate_placement($input){
     // Validate input
     if (!isset($input['x'], $input['y'], $input['piece'], $input['color'])) { // Check the necessary parameters
@@ -336,12 +382,73 @@ function rotateTableClockwise($table) {
 function change_player(){
     $turn = get_game()['player'];
     global $colors;
+    global $mysqli;
+
+    $index = array_search($turn, $colors);
+
+    $index++;
+    if ($index >= count($colors)) {
+        $index = 0;
+    }
+    $player = $colors[$index];
+    $sql = 'UPDATE `game_status` SET `player` = ?;';
+    $st = $mysqli->prepare($sql);
+    $st->bind_param('s',$player);
+    $st->execute();	
+
+    $sql = "UPDATE `player` SET `last_action`=NOW() WHERE `piece_color` = ?;";
+	$st = $mysqli->prepare($sql);
+    $st->bind_param('s',$player);
+	$st->execute();
 }
 
 function check_winner(){
+    global $mysqli;
+    $sql = "SELECT `color`, COUNT(*) AS count FROM `blocks` GROUP BY `color`;";
+	$st = $mysqli->prepare($sql);
+	$st->execute();
+    $res = $st->get_result();
+	$r = $res->fetch_all(MYSQLI_ASSOC);
 
+    $lowestCount = null;
+    $lowestColor = null;
+
+    foreach ($r as $row) {
+        if ($lowestCount === null || $row['count'] < $lowestCount) {
+            $lowestCount = $row['count'];
+            $lowestColor = $row['color'];
+        }
+    }
+
+    if ($lowestCount == 0){
+        declare_winner($lowestColor);
+    }
+    else {
+        $sql = "SELECT COUNT(*) as count FROM `player` WHERE `passed`=TRUE;";
+        $st = $mysqli->prepare($sql);
+        $st->execute();
+        $res = $st->get_result();
+
+        $count = 0;
+        while ($row = $res->fetch_assoc()) {
+            $count = $row["count"];
+        }
+
+        if ($count == 0){
+            declare_winner($lowestColor);
+        }
+    }
 }
 
+function declare_winner($color){
+    global $mysqli;
+
+    $sql = "UPDATE `game_status`
+            SET `result` = ?, `status` = 'ENDED';";
+    $st = $mysqli->prepare($sql);
+    $st->bind_param('s',$color);
+    $st->execute();	
+}
 function check_moves(){
 
 }
