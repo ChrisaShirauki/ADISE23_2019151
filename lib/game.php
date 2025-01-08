@@ -187,6 +187,11 @@ function place_piece($input){
         $st->bind_param('siii',$color,$piece,$x,$y);
         $st->execute();	
     }  
+
+    $sql = 'DELETE FROM `blocks` WHERE `color` = ? AND `piece` = ?';
+	$st = $mysqli->prepare($sql);
+	$st->bind_param('si',$color, $piece);	
+	$st->execute();
     
     $sql = "UPDATE `player` SET `passed`=FALSE WHERE `piece_color` = ?;";
 	$st = $mysqli->prepare($sql);
@@ -225,15 +230,18 @@ function pass_turn($input){
         return;
     }
 
+    player_pass($turn);
+    check_winner();
+    change_player();
+    
+}
+
+function player_pass($color){
     global $mysqli;
     $sql = "UPDATE `player` SET `passed`=TRUE WHERE `piece_color` = ?;";
 	$st = $mysqli->prepare($sql);
     $st->bind_param('s',$color);
 	$st->execute();
-
-    check_winner();
-
-    change_player();
 }
 function validate_placement($input){
     // Validate input
@@ -396,6 +404,20 @@ function change_player(){
     $st->bind_param('s',$player);
     $st->execute();	
 
+    $sql = 'SELECT * FROM player WHERE `piece_color` = ?';
+	$st = $mysqli->prepare($sql);
+    $st->bind_param('s',$player);
+	$st->execute();
+	$res = $st->get_result();
+	$r = $res->fetch_all(MYSQLI_ASSOC);
+    if ($r[0]['computer']) {    //Computer player, make a random move
+        $color = $r[0]['piece_color'];
+        random_move($color);
+        check_winner();
+        change_player();
+        return;
+    }
+
     $sql = "UPDATE `player` SET `last_action`=NOW() WHERE `piece_color` = ?;";
 	$st = $mysqli->prepare($sql);
     $st->bind_param('s',$player);
@@ -404,6 +426,8 @@ function change_player(){
 
 function check_winner(){
     global $mysqli;
+    global $colors;
+    
     $sql = "SELECT `color`, COUNT(*) AS count FROM `blocks` GROUP BY `color`;";
 	$st = $mysqli->prepare($sql);
 	$st->execute();
@@ -434,7 +458,7 @@ function check_winner(){
             $count = $row["count"];
         }
 
-        if ($count == 0){
+        if ($count == count($colors)){
             declare_winner($lowestColor);
         }
     }
@@ -449,6 +473,7 @@ function declare_winner($color){
     $st->bind_param('s',$color);
     $st->execute();	
 }
-function check_moves(){
 
+function random_move($color){
+    player_pass($color);
 }

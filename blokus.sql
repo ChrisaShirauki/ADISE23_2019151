@@ -551,3 +551,5 @@ BEGIN
     SET NEW.last_change = NOW();
 END$$
 DELIMITER ;
+
+CALL new_game();

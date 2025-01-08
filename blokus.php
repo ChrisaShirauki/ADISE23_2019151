@@ -93,6 +93,9 @@ function handle_placement($method,$input) {
 	else if($method=='PUT'){
 		place_piece($input);
 	}
+	else if($method=='POST'){
+		pass_turn($input);
+	}
 	else {
 		header('HTTP/1.1 405 Method Not Allowed');
 	}

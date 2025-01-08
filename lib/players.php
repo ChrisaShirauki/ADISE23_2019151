@@ -82,22 +82,25 @@ function start_game($available){
 	global $mysqli;
 
 	global $colors;
-	$start = array_rand($colors);	// Start as random player
-
-	$sql = "UPDATE game_status SET `status`='STARTED', `player`=?;";
-	$st = $mysqli->prepare($sql);
-	$st->bind_param('s',$start);
-	$st->execute();
+	
 
 	$i = 1;
 	foreach($available as $color){
 		$username = 'computer' . $i;
-		$sql = 'INSERT INTO `player` (`username`, `piece_color`, `last_action`, `player_token`) VALUES(?,?,NULL,NULL,TRUE);';
+		$sql = 'INSERT INTO `player` (`username`, `piece_color`, `last_action`, `player_token`, `computer`) VALUES(?,?,NULL,NULL,TRUE);';
 		$st = $mysqli->prepare($sql);
 		$st->bind_param('ss',$username,$color);
 		$st->execute();	
 		$i++;
 	}
+
+	$players = array_diff($colors, $available);
+	$startIndex = array_rand($players); // Start as random player
+	$start = $players[$startIndex];
+	$sql = "UPDATE game_status SET `status`='STARTED', `player`=?;";
+	$st = $mysqli->prepare($sql);
+	$st->bind_param('s',$start);
+	$st->execute();
 
 	$sql = "UPDATE `player` SET `last_action`=NOW();";
 	$st = $mysqli->prepare($sql);
@@ -116,7 +119,7 @@ function leave_game($input){
         return;
     }
 
-	$sql = 'DELETE FROM `players` WHERE `piece_color` = ?';
+	$sql = 'DELETE FROM `player` WHERE `piece_color` = ?';
 	$st = $mysqli->prepare($sql);
 	$st->bind_param('s',$c);	
 	$st->execute();
@@ -145,7 +148,7 @@ function get_players(){
 function check_activity($color){
 	global $mysqli;
 
-	$sql = 'SELECT * FROM `players` WHERE `piece_color` = ? AND `last_action` < (NOW() - INTERVAL 100 MINUTE)';
+	$sql = 'SELECT * FROM `player` WHERE `piece_color` = ? AND `last_action` < (NOW() - INTERVAL 100 MINUTE)';
 	$st = $mysqli->prepare($sql);
 	$st->bind_param('s',$color);
 	$st->execute();
@@ -164,7 +167,7 @@ function kick_inactive(){
 	$status = $game['status'];
 
 	if(check_activity($player) & $status=='STARTED'){	// If AFK after game starts kick
-		$sql = 'DELETE FROM `players` WHERE `piece_color` = ?';
+		$sql = 'DELETE FROM `player` WHERE `piece_color` = ?';
 		$st = $mysqli->prepare($sql);
 		$st->bind_param('s',$player);	
 		$st->execute();
@@ -176,7 +179,7 @@ function kick_inactive(){
 function check_token($color, $token){
     global $mysqli;
 
-    $sql = 'SELECT `player_token` FROM `players` WHERE `piece_color` = ?';
+    $sql = 'SELECT `player_token` FROM `player` WHERE `piece_color` = ?';
     $st = $mysqli->prepare($sql);
     $st->bind_param('s',$color);
     $st->execute();
