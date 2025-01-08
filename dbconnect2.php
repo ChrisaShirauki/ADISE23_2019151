@@ -14,6 +14,9 @@ if(gethostname()=='users.iee.ihu.gr') {
 }
 
 if ($mysqli->connect_errno) {
-    echo "Failed to connect to MySQL: (" . 
-    $mysqli->connect_errno . ") " . $mysqli->connect_error;
+    $error = "Failed to connect to MySQL: (" . $mysqli->connect_errno . ") " . $mysqli->connect_error;
+    header('Content-Type: application/json');
+    echo json_encode(['status' => 'error', 'message' => $error]);
+    http_response_code(500);
+    
 }?>
