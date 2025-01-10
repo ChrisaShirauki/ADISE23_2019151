@@ -72,8 +72,10 @@ function find_game($input) {
 	}
 	#return the token to the client to be used as input in all the functions
 	
+	$info['color'] = $color;
+	$info['token'] = $token;
 	header('Content-type: application/json');
-	print json_encode($token);
+	print json_encode($info);
 	header("HTTP/1.1 200 OK.");
 	
 }
@@ -148,7 +150,7 @@ function get_players(){
 function check_activity($color){
 	global $mysqli;
 
-	$sql = 'SELECT * FROM `player` WHERE `piece_color` = ? AND `last_action` < (NOW() - INTERVAL 100 MINUTE)';
+	$sql = 'SELECT * FROM `player` WHERE `piece_color` = ? AND `last_action` < (NOW() - INTERVAL 2 MINUTE)';
 	$st = $mysqli->prepare($sql);
 	$st->bind_param('s',$color);
 	$st->execute();

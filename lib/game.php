@@ -292,11 +292,12 @@ function validate_placement($input){
     // Call check_placement function
     return check_placement($x - 1, $y - 1, $block, $color, $rotation);
 }
-function check_placement($x, $y, $piece, $color, $rotation){
+
+function check_placement($x, $y, $piece, $color, $rotation) {
     $block = $piece;
 
-    // Rotate the block as needed before running the checks
-    for ($i = 0; $i < $rotation; $i++){
+    // Rotate the block as needed
+    for ($i = 0; $i < $rotation; $i++) {
         $block = rotateTableClockwise($block);
     }
 
@@ -307,13 +308,17 @@ function check_placement($x, $y, $piece, $color, $rotation){
     $boardRows = count($board);
     $boardCols = count($board[0]);
 
-    $adjacentColor = false;
+    $adjacentCorner = false;
+    $adjacentSide = false;
 
-    // All the direction to check for color
-    $directions = [
-        [-1, -1],   [-1, 0],    [-1, 1],
-        [0, -1],                [0, 1],
-        [1, -1],    [1, 0],     [1, 1]
+    $corners = [
+        [-1, -1], [-1, 1],
+        [1, -1], [1, 1]
+    ];
+    $sides = [
+            [-1, 0],
+        [0, -1], [0, 1],
+            [1, 0]
     ];
 
     $changes = [];
@@ -321,53 +326,75 @@ function check_placement($x, $y, $piece, $color, $rotation){
     for ($i = 0; $i < $blockRows; $i++) {
         for ($j = 0; $j < $blockCols; $j++) {
             if ($block[$i][$j] === 1) { // A tile on the block
-                // Match with the coordinates on the board
                 $boardX = $x + $i;
                 $boardY = $y + $j;
 
                 $changes[] = [$boardX, $boardY];
 
-                // Check if the block goes out of bounds
+                // Check out-of-bounds
                 if ($boardX < 0 || $boardX >= $boardRows || $boardY < 0 || $boardY >= $boardCols) {
-                    return []; 
+                    return []; // Out of bounds
                 }
 
-                // Check if the block covers another block
-                if ($board[$boardX][$boardY]['piece_color'] !== null){
-                    return [];
+                // Check if the block overlaps another piece
+                if ($board[$boardX][$boardY]['piece_color'] !== null) {
+                    return []; // Overlapping block
                 }
 
-                foreach ($directions as [$dx, $dy]) {
+                // Check corners for same color adjacency
+                foreach ($corners as [$dx, $dy]) {
                     $neighborX = $boardX + $dx;
                     $neighborY = $boardY + $dy;
 
                     if (
-                        $neighborX >= 0 && $neighborX < $boardRows && 
+                        $neighborX >= 0 && $neighborX < $boardRows &&
                         $neighborY >= 0 && $neighborY < $boardCols &&
                         $board[$neighborX][$neighborY]['piece_color'] === $color
                     ) {
-                        $adjacentColor = true;
+                        $adjacentCorner = true;
+                    }
+                }
+
+                // Check sides for same color adjacency (which is invalid)
+                foreach ($sides as [$dx, $dy]) {
+                    $neighborX = $boardX + $dx;
+                    $neighborY = $boardY + $dy;
+
+                    if (
+                        $neighborX >= 0 && $neighborX < $boardRows &&
+                        $neighborY >= 0 && $neighborY < $boardCols &&
+                        $board[$neighborX][$neighborY]['piece_color'] === $color
+                    ) {
+                        $adjacentSide = true;
                     }
                 }
             }
         }
     }
 
-    if (!$adjacentColor) {  // No adjacent tile, Check the four corners for the first move
-        $corners = [
-            [0, 0],                 [0, $boardCols - 1],
-            [$boardRows - 1, 0],    [$boardRows - 1, $boardCols - 1]
-        ];
-        
-        foreach ($corners as $corner) {
-            if (in_array($corner, $changes)) {
-                return $changes;
-            }
-        }
-        return [];
+    // Check placement rules
+    if ($adjacentSide) {
+        return []; // Invalid placement: adjacent to the same color on the side
     }
 
-    return $changes; 
+    // If not adjacent to any corner, ensure placement touches a corner if this is the first move
+    if (!$adjacentCorner) {
+        $edges = [
+            [0, 0],                     [0, $boardCols - 1],
+
+            [$boardRows - 1, 0],        [$boardRows - 1, $boardCols - 1]
+        ];
+
+        foreach ($edges as $edge) {
+            if (in_array($edge, $changes)) {
+                return $changes; // Valid placement on a corner
+            }
+        }
+
+        return []; // Invalid placement: no corner adjacency
+    }
+
+    return $changes; // Valid placement
 }
 
 // Rotate a table 90 degrees

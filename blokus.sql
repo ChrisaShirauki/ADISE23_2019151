@@ -15,6 +15,9 @@ CREATE TABLE `board`(
 DELIMITER $$
 CREATE OR REPLACE PROCEDURE new_game()		#clean the board and replace the blocks
 BEGIN
+
+    TRUNCATE TABLE `player`;
+    
 	UPDATE `board`  SET `piece_color` = NULL;
     UPDATE `board`  SET `piece` = NULL;
 
