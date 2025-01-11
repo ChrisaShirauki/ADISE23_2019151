@@ -21,6 +21,7 @@ BEGIN
 	UPDATE `board`  SET `piece_color` = NULL;
     UPDATE `board`  SET `piece` = NULL;
 
+    TRUNCATE TABLE `blocks`;
     REPLACE INTO `blocks` SELECT * FROM `blocks_initial`;
 END ;
 $$
