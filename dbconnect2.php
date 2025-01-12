@@ -18,4 +18,5 @@ if ($mysqli->connect_errno) {
     header('Content-Type: application/json');
     echo json_encode(['status' => 'error', 'message' => $error]);
     http_response_code(500);
+    
 }?>

@@ -1,0 +1,121 @@
+body {
+    font-family: Arial, sans-serif;
+    padding: 20px;
+}
+
+.form-container {
+    margin-bottom: 20px;
+}
+
+.form-container input {
+    padding: 10px;
+    font-size: 16px;
+    margin-right: 10px;
+}
+
+button {
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    height: 40px;
+}
+
+.info-container {
+    margin-top: 20px;
+    font-size: 18px;
+}
+.game-div{
+    display: flex;
+    gap: 50px;
+    margin-bottom: 50px;
+}
+
+.board {
+    display: grid;
+    grid-template-columns: repeat(20, 30px); /* Adjust for your board size */
+    gap: 2px;
+}
+
+.cell {
+    width: 30px;
+    height: 30px;
+    border: 1px solid #000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.cell.empty {
+    background-color: #f0f0f0;
+}
+
+.cell.red {
+    background-color: red;
+}
+
+.cell.blue {
+    background-color: blue;
+}
+.cell.green {
+    background-color: green;
+}
+
+.cell.yellow {
+    background-color: yellow;
+}
+
+.player-blocks {
+    width: 450px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.player-blocks h2 {
+    margin: 0;
+}
+
+.block-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+.block {
+    width: 30px;
+    height: 30px;
+    background-color: #ddd;
+    border: 1px solid #333;
+    text-align: center;
+    line-height: 30px;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.block.red {
+    background-color: red;
+}
+
+.block.blue {
+    background-color: blue;
+}
+
+.block.green {
+    background-color: green;
+}
+
+.block.yellow {
+    background-color: yellow;
+}
+.block.empty {
+    background-color: white;
+}
+.block.selected {
+    border: 3px solid gold;
+}
+.shape-container {
+    display: grid;
+    gap: 2px;
+}

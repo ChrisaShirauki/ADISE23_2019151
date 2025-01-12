@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MyBlokus</title>
+    <link rel="stylesheet" href="index.css">
+</head>
+<body>
+    <div class="form-container" id="form-container">
+        <input type="text" id="username" placeholder="Enter your username">
+        <button id="find-game-button">Find Game</button>
+    </div>
+
+    <div class="game-div">
+        <div class="info-container">
+            <p><strong>Color:</strong> <span id="player-color">N/A</span></p>
+            <p><strong>Token:</strong> <span id="player-token">N/A</span></p>
+            <p><strong>Playing:</strong> <span id="player-turn">N/A</span></p>
+        </div>
+        <div>
+            <h3>Selected Block</h3>
+            <span>Right click to rotate</span>
+            <div id="selected-block"></div>
+        </div>
+        <button id="leave-game-button">Leave Game</button>
+    </div>
+
+    <div class="game-div">
+        <div>
+            <h1>Game Board</h1>
+            <div id="game-board" class="board"></div>
+        </div>
+        <div class="player-blocks" id="player-blocks">
+            <h2>Player Blocks</h2>
+            <span>Pick your block type</span>
+            <!-- Blocks for each player will be rendered here -->
+        </div>
+    </div>
+
+    
+    <script src="index.js"></script>
+</body>
+</html>
